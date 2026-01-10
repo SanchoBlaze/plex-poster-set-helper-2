@@ -1,139 +1,327 @@
 
-# plex-poster-set-helper
+# Plex Poster Set Helper
 
-plex-poster-set-helper is a tool to help upload sets of posters from ThePosterDB or MediUX to your Plex server in seconds!
+Automatically download and apply poster sets from ThePosterDB and MediUX to your Plex Media Server in seconds. This tool streamlines the process of updating your Plex library with high-quality custom posters, supporting both movies and TV shows with season and episode artwork.
+
+## Features
+
+- **Multiple Source Support**
+  - ThePosterDB sets, single posters, and user uploads
+  - MediUX sets with full-quality image downloads
+  
+- **Flexible Usage Modes**
+  - Interactive CLI with menu-driven interface
+  - Direct command-line execution
+  - Modern GUI built with CustomTkinter
+  - Bulk import from text files
+  
+- **Smart Matching**
+  - Automatic media detection and matching
+  - Support for movies, TV shows, seasons, and collections
+  - Multiple library support
+  
+- **High Performance**
+  - Playwright-based scraping for JavaScript-rendered pages
+  - Parallel processing capabilities
+  - Automatic retry and error handling
+
+---
 
 ## Installation
 
-1. [Install Python](https://www.python.org/downloads/) (if not installed already)
+### Prerequisites
+- Python 3.8 or higher
+- Plex Media Server with API access
 
-2. Extract all files into a folder
+### Setup
 
-3. Open a terminal in the folder
+1. **Clone or download this repository**
+   ```bash
+   git clone https://github.com/tonywied17/plex-poster-set-helper.git
+   cd plex-poster-set-helper
+   ```
 
-4. Install the required dependencies using
-
+2. **Install dependencies**
    ```bash
    pip install -r requirements.txt
    ```
 
-5. Rename example_config.json to config.json, and populate with the proper information:
-   - **"base_url"**  
-     - The IP and port of your Plex server. e.g. "http://12.345.67.890:32400/".
-   - **"token"**  
-     - Your Plex token (can be found [here](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)).
-   - **"tv_library"**  
-     - The name of your TV Shows library (e.g., "TV Shows"). Multiple libraries are also supported (see the **Multiple Libraries** section below).
-   - **"movie_library"**  
-     - The name of your Movies library (e.g., "Movies"). Multiple libraries are also supported (see the **Multiple Libraries** section below).
-   - **"mediux_filters"**  
-     - Specify which media types to upload by including these flags:
-       - show_cover
-       - background
-       - season_cover
-       - title_card
+3. **Configure your Plex connection**
+   
+   Rename `example_config.json` to `config.json` and fill in your details:
+
+   ```json
+   {
+     "base_url": "http://192.168.1.100:32400",
+     "token": "your_plex_token_here",
+     "movie_library": "Movies",
+     "tv_library": "TV Shows",
+     "bulk_txt": "bulk_import.txt",
+     "mediux_filters": ["poster", "backdrop", "title_card"],
+     "title_mappings": {
+       "Pluribus": "PLUR1BUS",
+       "The Office": "The Office (US)"
+     }
+   }
+   ```
+
+   **Configuration Options:**
+   
+   | Option | Description | Example |
+   |--------|-------------|---------|
+   | `base_url` | Your Plex server URL and port | `"http://192.168.1.100:32400"` |
+   | `token` | Plex authentication token ([How to find](https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/)) | `"aBc123XyZ..."` |
+   | `movie_library` | Name of your Movies library | `"Movies"` or `["Movies", "4K Movies"]` |
+   | `tv_library` | Name of your TV Shows library | `"TV Shows"` or `["TV", "Anime"]` |
+   | `bulk_txt` | Default file for bulk imports | `"bulk_import.txt"` |
+   | `mediux_filters` | MediUX media types to download | `["poster", "backdrop", "title_card"]` |
+   | `title_mappings` | Manual title overrides for non-matching names | `{"Source Title": "Plex Title"}` |
+
+   > **Multiple Libraries:** You can specify multiple libraries as arrays to apply posters across all of them simultaneously.
+
+---
 
 ## Usage
 
-Run python plex_poster_set_helper.py in a terminal, using one of the following options:
-
-### Command Line Arguments
-
-The script supports various command-line arguments for flexible use.
-
-1. **Launch the GUI**  
-   Use the gui argument to open the graphical user interface:
-   
-   ```bash
-   python plex_poster_set_helper.py gui
-   ```
-
-2. **Single Link Import**  
-   Provide a link directly to set posters from a single MediUX or ThePosterDB set:
-   
-   ```bash
-   python plex_poster_set_helper.py https://mediux.pro/sets/9242
-   ```
-
-3. **Bulk Import**  
-   Import multiple links from a .txt file using the bulk argument:
-   
-   ```bash
-   python plex_poster_set_helper.py bulk bulk_import.txt
-   ```
-
-   - The .txt file should contain one URL per line. Lines starting with # or // will be ignored as comments.
-
-   - **If no text file parameter is provided, it will use the default value from config.json for bulk_txt.**
-
-
-## Supported Features
-
 ### Interactive CLI Mode
 
-![GUI Overview](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/assets/cli_overview.png)
+Run the script without arguments to enter interactive mode:
 
-If no command-line arguments are provided, the script will enter an interactive CLI mode, where you can select from menu options to perform various tasks:
+```bash
+python main.py
+```
 
-- **Option 1:** Enter a ThePosterDB set URL, MediUX set URL, or ThePosterDB user URL to set posters for individual items or entire user collections.
-- **Option 2:** Run a bulk import by specifying the path to a `.txt` file containing multiple URLs (or simply press `Enter` to use the default bulk file defined in `config.json`).
-- **Option 3:** Launch the GUI for a graphical interface.
-- **Option 4:** Stop the program and exit.
+![CLI Overview](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/assets/cli_overview.png)
 
-When using bulk import, if no file path is specified, the script will default to the file provided in the `config.json` under the `bulk_txt` key. Each URL in the `.txt` file should be on a separate line, and any lines starting with `#` or `//` will be ignored as comments.
+**Menu Options:**
+1. **Single URL Import** - Paste a ThePosterDB or MediUX link to import that set
+2. **Bulk Import** - Process multiple URLs from a text file
+3. **Launch GUI** - Open the graphical interface
+4. **Exit** - Close the application
+
+### Command-Line Arguments
+
+**Single URL:**
+```bash
+python main.py https://theposterdb.com/set/12345
+```
+
+**Bulk Import:**
+```bash
+python main.py bulk bulk_import.txt
+```
+
+**Launch GUI:**
+```bash
+python main.py gui
+```
 
 ### GUI Mode
 
-![GUI Overview](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/assets/gui_overview.png)
-![Bulk Import](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/assets/bulk_import.png)
-![URL Scrape](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/assets/url_scrape.png)
+Launch the graphical interface for a more visual experience:
 
-
-The GUI provides a more user-friendly interface for managing poster uploads. Users can run the script with python plex_poster_set_helper.py gui to launch the CustomTkinter-based interface, where they can:
-- Easily enter single or bulk URLs.
-- View progress, status updates, and more in an intuitive layout.
-
-### Multiple Libraries
-
-To target multiple Plex libraries, modify config.json as follows:
-
-```json
-"tv_library": ["TV Shows", "Kids TV Shows"],
-"movie_library": ["Movies", "Kids Movies"]
+```bash
+python main.py gui
 ```
 
-Using these options, the tool will apply posters to the same media in all specified libraries.
+![GUI Overview](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/assets/gui_overview.png)
+
+The GUI provides:
+- Easy URL input with real-time validation
+- Visual progress tracking
+- Status updates and error reporting
+- Bulk import file management
+
+---
+
+## Supported URLs
+
+### ThePosterDB
+
+| URL Type | Example | Description |
+|----------|---------|-------------|
+| **Set** | `https://theposterdb.com/set/12345` | Downloads all posters in a set |
+| **Single Poster** | `https://theposterdb.com/poster/66055` | Finds and downloads the entire set from a single poster |
+| **User Profile** | `https://theposterdb.com/user/username` | Downloads all uploads from a user |
+
+### MediUX
+
+| URL Type | Example | Description |
+|----------|---------|-------------|
+| **Set** | `https://mediux.pro/sets/24522` | Downloads all posters in a set with original quality |
+
+> **Note:** MediUX downloads use direct API URLs for maximum image quality (~2MB originals instead of ~116KB compressed versions).
+
+---
+
+## Advanced Features
 
 ### Bulk Import
 
-1. Use the bulk argument to import your default `bulk_text` file specified in `config.json`.
-2. Or, specify the path to a .txt file containing URLs as a second argument. Each URL will be processed to set posters for the corresponding media.
+Create a text file with one URL per line:
 
-### Filters
+```text
+# Movies
+https://theposterdb.com/set/12345
+https://mediux.pro/sets/24522
 
-The mediux_filters option in config.json allows you to control which media types get posters:
-- show_cover: Upload covers for TV shows.
-- background: Upload background images.
-- season_cover: Set posters for each season.
-- title_card: Add title cards.
+// TV Shows
+https://theposterdb.com/set/67890
+https://theposterdb.com/poster/11111
+```
 
-## Executable Build
+Lines starting with `#` or `//` are treated as comments and ignored.
 
-In the `dist/` directory, you'll find the compiled executable for Windows: `Plex Poster Set Helper.zip`. This executable allows you to run the tool without needing to have Python installed.
+**Run bulk import:**
+```bash
+python main.py bulk my_posters.txt
+```
 
-To rebuild the executable:
+Or use the default file specified in `config.json`:
+```bash
+python main.py bulk
+```
 
-*Note: Prior to building, set the `interactive_cli` boolean to False on line `20` to ensure the executable launches in GUI Mode by default*
+### MediUX Filters
 
-1. Install PyInstaller if you don't have it already:
+Control which types of media are downloaded from MediUX by editing the `mediux_filters` in `config.json`:
+
+```json
+"mediux_filters": ["poster", "background", "season_cover", "title_card"]
+```
+
+**Available filters:**
+- `poster` - Standard movie/show posters and season covers
+- `backdrop` - Background/backdrop images
+- `title_card` - Episode title cards
+
+Remove any filter to skip that media type during import.
+
+### Title Matching
+
+The tool uses intelligent matching to find media in your Plex library:
+
+**1. Manual Title Mappings** (Exact overrides)
+For cases where poster source names don't match your Plex library, use `title_mappings` in `config.json`:
+
+```json
+"title_mappings": {
+  "Pluribus": "PLUR1BUS",
+  "The Office": "The Office (US)",
+  "Star Wars Episode IV": "Star Wars"
+}
+```
+
+When the scraper finds "Pluribus", it will automatically look for "PLUR1BUS" in your library.
+
+**2. Fuzzy Matching** (Automatic fallback)
+If exact matching fails, the tool automatically tries fuzzy matching with 80% similarity:
+- "The Batman" might match "Batman (2022)"
+- "Star Wars: A New Hope" might match "Star Wars Episode IV"
+
+The tool will notify you when fuzzy matching is used: `ℹ Fuzzy matched 'Title A' to 'Title B'`
+
+### Multiple Libraries
+
+Apply posters to multiple Plex libraries simultaneously:
+
+```json
+{
+  "movie_library": ["Movies", "4K Movies", "Kids Movies"],
+  "tv_library": ["TV Shows", "Anime", "Kids TV"]
+}
+```
+
+The tool will find and update the same media across all specified libraries.
+
+---
+
+## Building the Executable
+
+A pre-built Windows executable is available in the `dist/` folder. To build it yourself:
+
+1. **Install PyInstaller**
    ```bash
    pip install pyinstaller
    ```
 
-2. Use the provided spec file (`_PlexPosterSetHelper.spec`) to build the executable:
-
+2. **Build using the spec file**
    ```bash
    pyinstaller _PlexPosterSetHelper.spec
    ```
 
-This will create the executable along with the necessary files.
+> **Tip:** Set `interactive_cli = False` in the main script before building to make the executable launch in GUI mode by default.
+
+---
+
+## Troubleshooting
+
+### "Poster set not found" Error
+
+**Problem:** Error when using ThePosterDB single poster URLs  
+**Solution:** This has been fixed in the latest version. The scraper now properly handles the updated page structure where set links are in tooltip elements.
+
+### MediUX Images Not Downloading
+
+**Problem:** Images appear blank or fail to download  
+**Solution:** The scraper now uses direct API URLs (`https://api.mediux.pro/assets/`) instead of the Next.js proxy. Ensure you have network access to this domain.
+
+### Posters Not Applying to Plex
+
+**Problem:** Tool downloads posters but they don't appear in Plex  
+**Solutions:**
+- Verify library names in `config.json` match exactly (case-sensitive)
+- Ensure media exists in Plex with matching titles and years
+- Check that your Plex token has write permissions
+- Confirm the Plex server is accessible at the configured URL
+
+### Connection Errors
+
+**Problem:** Cannot connect to scraping sources  
+**Solutions:**
+- Check your internet connection
+- Ensure Playwright browser is properly installed: `playwright install chromium`
+- Some networks may block automated access; try from a different network
+- Check if the source website is accessible in your browser
+
+### Media Not Found in Library
+
+**Problem:** Tool reports media not found even though it exists  
+**Solutions:**
+- Verify the media title and year match between the poster source and Plex
+- Check for special characters or formatting differences
+- Ensure the media is properly scanned and visible in your Plex library
+- Try refreshing metadata in Plex before running the tool
+
+---
+
+## Requirements
+
+- **Python 3.8+**
+- **Dependencies:** (automatically installed via `requirements.txt`)
+  - `plexapi` - Plex API interaction
+  - `requests` - HTTP requests
+  - `beautifulsoup4` - HTML parsing
+  - `playwright` - Modern web scraping
+  - `customtkinter` - Modern GUI framework
+  - `pillow` - Image processing
+
+---
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit pull requests or open issues for bugs and feature requests.
+
+---
+
+## License
+
+This project is open source and available under the MIT License.
+
+---
+
+## Credits
+
+- **ThePosterDB** - Community-driven poster database
+- **MediUX** - High-quality media artwork source
+- Built with ❤️ for the Plex community
