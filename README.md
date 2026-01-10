@@ -19,12 +19,6 @@ Automatically download and apply poster sets from ThePosterDB and MediUX to your
   - Automatic media detection and matching
   - Support for movies, TV shows, seasons, and collections
   - Multiple library support
-  
-- **High Performance**
-  - Playwright-based scraping for JavaScript-rendered pages
-  - Parallel processing capabilities
-  - Automatic retry and error handling
-
 ---
 
 ## Installation
