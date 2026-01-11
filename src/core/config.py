@@ -16,6 +16,7 @@ class Config:
     movie_library: List[str] = None
     mediux_filters: List[str] = None
     title_mappings: Dict[str, str] = None
+    max_workers: int = 3
     
     def __post_init__(self):
         """Initialize default values for mutable fields."""

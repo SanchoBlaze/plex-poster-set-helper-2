@@ -714,6 +714,10 @@ class PlexPosterGUI:
             self.mediux_filters_text.delete(0, ctk.END)
             self.mediux_filters_text.insert(0, ", ".join(self.config.mediux_filters))
         
+        if self.max_workers_var:
+            max_workers_value = getattr(self.config, 'max_workers', 3)
+            self.max_workers_var.set(max_workers_value)
+        
         self._load_bulk_import_file()
         self._load_title_mappings()
         
@@ -730,7 +734,8 @@ class PlexPosterGUI:
             movie_library=[item.strip() for item in self.movie_library_text.get().strip().split(",")],
             mediux_filters=[item.strip() for item in self.mediux_filters_text.get().strip().split(",")],
             bulk_files=self.config.bulk_files,  # Preserve bulk files list
-            title_mappings=self.config.title_mappings  # Preserve title mappings
+            title_mappings=self.config.title_mappings,  # Preserve title mappings
+            max_workers=self.max_workers_var.get() if self.max_workers_var else 3
         )
         
         if self.config_manager.save(new_config):
