@@ -46,22 +46,42 @@ Automatically download and apply poster sets from ThePosterDB and MediUX to your
    ```
 
 2. **Install dependencies**
+   
+   **Automated Setup (Recommended):**
+   
+   **Windows:**
    ```bash
-   pip install -r requirements.txt
+   # Double-click setup.bat or run in PowerShell:
+   python setup.py
    ```
    
-   **For Linux (Ubuntu/Debian/Unraid):**
+   **Linux/Mac:**
+   ```bash
+   # Make the script executable and run:
+   chmod +x setup.sh
+   ./setup.sh
+   
+   # Or run directly:
+   python3 setup.py
+   ```
+   
+   **Manual Setup:**
+   ```bash
+   # Install Python packages
+   pip install -r requirements.txt
+   
+   # Install Playwright browser (REQUIRED for scraping)
+   python -m playwright install chromium
+   ```
+   
+   **For Linux (Ubuntu/Debian/Unraid) - Additional Steps:**
    ```bash
    # Install system dependencies for GUI support
    sudo apt update
    sudo apt install python3-tk python3-pip
    
-   # Install Python packages
-   pip3 install -r requirements.txt
-   
-   # Install Playwright browser
-   python3 -m playwright install chromium
-   python3 -m playwright install-deps chromium
+   # Install Playwright system dependencies
+   sudo python3 -m playwright install-deps chromium
    ```
    
    **For Unraid Docker Users:**
