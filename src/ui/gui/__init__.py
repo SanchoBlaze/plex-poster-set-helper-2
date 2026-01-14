@@ -1,5 +1,5 @@
 """GUI package for Plex Poster Set Helper."""
 
-from .main import PlexPosterGUI
+from .app import PlexPosterGUI
 
 __all__ = ["PlexPosterGUI"]
