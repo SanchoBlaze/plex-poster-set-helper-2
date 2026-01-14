@@ -87,7 +87,13 @@ Automatically download and apply poster sets from ThePosterDB and MediUX to your
        "Pluribus": "PLUR1BUS"
      },
      "max_workers": 4,
-     "log_file": "debug.log"
+     "log_file": "debug.log",
+     "scraper_min_delay": 0.1,
+     "scraper_max_delay": 0.5,
+     "scraper_initial_delay": 0.0,
+     "scraper_batch_delay": 2.0,
+     "scraper_page_wait_min": 0.0,
+     "scraper_page_wait_max": 0.5
    }
    ```
 
@@ -104,10 +110,24 @@ Automatically download and apply poster sets from ThePosterDB and MediUX to your
    | `title_mappings` | Manual title overrides for non-matching names | `{"Pluribus": "PLUR1BUS"}` |
    | `max_workers` | Number of concurrent workers for bulk operations | `4` |
    | `log_file` | Path to log file for debugging | `"debug.log"` |
+   | **Scraper Performance Settings** | | |
+   | `scraper_min_delay` | Minimum delay between scraping requests (seconds) | `0.1` |
+   | `scraper_max_delay` | Maximum delay between scraping requests (seconds) | `0.5` |
+   | `scraper_initial_delay` | Delay before first scraping request (seconds) | `0.0` |
+   | `scraper_batch_delay` | Extra delay every 10 requests (seconds) | `2.0` |
+   | `scraper_page_wait_min` | Min wait after page load for JavaScript (seconds) | `0.0` |
+   | `scraper_page_wait_max` | Max wait after page load for JavaScript (seconds) | `0.5` |
 
    > **Multiple Libraries:** You can specify multiple libraries as arrays to apply posters across all of them simultaneously.
    
    > **Multiple Bulk Files:** The `bulk_files` array supports multiple text files for organizing different import lists (e.g., movies, TV shows, seasonal updates).
+   
+   > **Scraper Performance Tuning:** Configure delays via `config.json` or the GUI Settings tab. Three presets available:
+   > - **⚡ Fast (Risky):** All delays minimized - fastest scraping, highest detection risk
+   > - **⚖️ Balanced (Default):** Optimized for speed while maintaining safety (0.1-0.5s delays)
+   > - **🛡️ Safe (Slower):** Conservative delays for maximum safety (0.5-2.0s delays)
+   > 
+   > The `scraper_page_wait_*` settings control how long to wait after page navigation for JavaScript execution. Set both to `0.0` for instant scraping (faster but may miss dynamic content).
 
 ---
 
@@ -203,6 +223,7 @@ python main.py gui
 ![GUI 3](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/.github/title_mappings.png)
 ![GUI 4](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/.github/reset_posters.png)
 ![GUI 5](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/.github/config.png)
+![GUI 6](https://raw.githubusercontent.com/tonywied17/plex-poster-set-helper/refs/heads/main/.github/config2.png)
 
 The GUI provides an intuitive interface with multiple tabs:
 

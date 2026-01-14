@@ -13,6 +13,12 @@ from ..core.models import PosterInfo
 class BaseScraper(ABC):
     """Base class for all scrapers with comprehensive anti-scraping measures."""
     
+    # Default delay settings (can be overridden by config)
+    DEFAULT_MIN_DELAY = 0.1
+    DEFAULT_MAX_DELAY = 0.5
+    DEFAULT_INITIAL_DELAY = 0.0
+    DEFAULT_BATCH_DELAY = 2.0
+    
     # Realistic user agents rotation
     USER_AGENTS = [
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -33,11 +39,12 @@ class BaseScraper(ABC):
         {'width': 1440, 'height': 900},
     ]
     
-    def __init__(self, use_playwright: bool = True):
+    def __init__(self, use_playwright: bool = True, config=None):
         """Initialize base scraper.
         
         Args:
             use_playwright: Whether to use Playwright for scraping (default True).
+            config: Config object with scraper settings (optional).
         """
         self.use_playwright = use_playwright
         self._playwright = None
@@ -45,6 +52,22 @@ class BaseScraper(ABC):
         self._page: Page = None
         self._request_count = 0
         self._last_request_time = 0
+        
+        # Load delay settings from config or use defaults
+        if config:
+            self._min_delay = getattr(config, 'scraper_min_delay', self.DEFAULT_MIN_DELAY)
+            self._max_delay = getattr(config, 'scraper_max_delay', self.DEFAULT_MAX_DELAY)
+            self._initial_delay = getattr(config, 'scraper_initial_delay', self.DEFAULT_INITIAL_DELAY)
+            self._batch_delay = getattr(config, 'scraper_batch_delay', self.DEFAULT_BATCH_DELAY)
+            self._page_wait_min = getattr(config, 'scraper_page_wait_min', 0.0)
+            self._page_wait_max = getattr(config, 'scraper_page_wait_max', 0.5)
+        else:
+            self._min_delay = self.DEFAULT_MIN_DELAY
+            self._max_delay = self.DEFAULT_MAX_DELAY
+            self._initial_delay = self.DEFAULT_INITIAL_DELAY
+            self._batch_delay = self.DEFAULT_BATCH_DELAY
+            self._page_wait_min = 0.0
+            self._page_wait_max = 0.5
     
     def __enter__(self):
         """Context manager entry."""
@@ -57,30 +80,43 @@ class BaseScraper(ABC):
         if self.use_playwright:
             self._stop_playwright()
     
-    def _apply_random_delay(self, min_delay: float = 0.5, max_delay: float = 2.0):
+    def _apply_random_delay(self, min_delay: float = None, max_delay: float = None):
         """Apply random delay between requests to avoid detection.
         
         Args:
-            min_delay: Minimum delay in seconds.
-            max_delay: Maximum delay in seconds.
+            min_delay: Minimum delay in seconds (uses config value if None).
+            max_delay: Maximum delay in seconds (uses config value if None).
         """
-        delay = random.uniform(min_delay, max_delay)
-        current_time = time.time()
+        # Use configured delays if not specified
+        if min_delay is None:
+            min_delay = self._min_delay
+        if max_delay is None:
+            max_delay = self._max_delay
         
-        # Ensure we don't make requests too frequently
-        if self._last_request_time > 0:
-            time_since_last = current_time - self._last_request_time
-            if time_since_last < min_delay:
-                additional_delay = min_delay - time_since_last
-                time.sleep(additional_delay)
+        # First request: use initial delay (typically 0 for speed)
+        if self._request_count == 0:
+            if self._initial_delay > 0:
+                time.sleep(self._initial_delay)
+        else:
+            # Subsequent requests: apply normal delay
+            delay = random.uniform(min_delay, max_delay)
+            current_time = time.time()
+            
+            # Ensure we don't make requests too frequently
+            if self._last_request_time > 0:
+                time_since_last = current_time - self._last_request_time
+                if time_since_last < min_delay:
+                    additional_delay = min_delay - time_since_last
+                    time.sleep(additional_delay)
+            
+            time.sleep(delay)
         
-        time.sleep(delay)
         self._last_request_time = time.time()
         self._request_count += 1
         
-        # Add longer delay every 10 requests
-        if self._request_count % 10 == 0:
-            time.sleep(random.uniform(3.0, 5.0))
+        # Add longer delay every 10 requests (if configured)
+        if self._batch_delay > 0 and self._request_count % 10 == 0:
+            time.sleep(random.uniform(self._batch_delay * 0.8, self._batch_delay * 1.2))
     
     def _simulate_human_mouse_movement(self):
         """Simulate realistic human mouse movement with curved paths."""
@@ -407,13 +443,15 @@ class BaseScraper(ABC):
                 
                 self._page.goto(url, wait_until=wait_until, timeout=60000)
                 
-                # Site-specific handling
+                # Site-specific handling with configurable delays
                 if "mediux.pro" in url:
                     try:
                         # Wait for the script tags that contain the data
                         self._page.wait_for_selector('script', timeout=5000)
-                        # Additional wait for JavaScript execution
-                        self._page.wait_for_timeout(random.randint(1000, 2000))
+                        # Additional wait for JavaScript execution (configurable)
+                        if self._page_wait_max > 0:
+                            wait_ms = int(random.uniform(self._page_wait_min, self._page_wait_max) * 1000)
+                            self._page.wait_for_timeout(wait_ms)
                     except:
                         # Silently continue - script tags always exist, this rarely fails
                         pass
@@ -421,13 +459,18 @@ class BaseScraper(ABC):
                     try:
                         # Wait for any poster-related content to load
                         self._page.wait_for_selector('script', timeout=5000)
-                        self._page.wait_for_timeout(random.randint(800, 1500))
+                        # Configurable wait for content (was hardcoded 800-1500ms)
+                        if self._page_wait_max > 0:
+                            wait_ms = int(random.uniform(self._page_wait_min, self._page_wait_max) * 1000)
+                            self._page.wait_for_timeout(wait_ms)
                     except:
                         # Silently continue - content usually loads anyway
                         pass
                 else:
-                    # Generic wait for dynamic content
-                    self._page.wait_for_timeout(random.randint(1000, 2000))
+                    # Generic wait for dynamic content (configurable)
+                    if self._page_wait_max > 0:
+                        wait_ms = int(random.uniform(self._page_wait_min, self._page_wait_max) * 1000)
+                        self._page.wait_for_timeout(wait_ms)
                 
                 # Wait for custom selector if provided
                 if wait_for_selector:

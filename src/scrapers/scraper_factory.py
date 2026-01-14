@@ -55,7 +55,7 @@ class ScraperFactory:
         Returns:
             Tuple of (movie_posters, show_posters, collection_posters).
         """
-        with PosterDBScraper(use_playwright=self.use_playwright) as scraper:
+        with PosterDBScraper(use_playwright=self.use_playwright, config=self.config) as scraper:
             if "/user/" in url:
                 # User page - scrape all uploads
                 return scraper.scrape_user_uploads(url)

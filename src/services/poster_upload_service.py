@@ -99,11 +99,32 @@ class PosterUploadService:
     
     def _add_source_labels(self, item, source: str):
         """Add both main label and source-specific label.
+        Remove old source labels to prevent duplicates.
         
         Args:
             item: Plex item to label
             source: Source of the poster (mediux, posterdb, etc.)
         """
+        # Remove ALL old source labels first to prevent duplicates
+        try:
+            # List of all possible source labels (Plex capitalizes them)
+            all_source_labels = [
+                'Plex_poster_set_helper_mediux',
+                'Plex_poster_set_helper_posterdb'
+            ]
+            
+            # Remove ALL source-specific labels
+            for old_label in all_source_labels:
+                try:
+                    item.removeLabel(old_label)
+                except Exception:
+                    # Label might not exist, that's fine
+                    pass
+        except Exception:
+            # Silently fail if there's an error
+            pass
+        
+        # Add the main label and new source-specific label
         self._add_label(item, 'plex_poster_set_helper')
         self._add_label(item, f'plex_poster_set_helper_{source}')
     

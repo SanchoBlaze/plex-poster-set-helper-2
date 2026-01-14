@@ -36,17 +36,24 @@
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                       │
 │  ┌──────────────────────────────────────────────────────────────┐  │
-│  │  REQUEST PHASE                                                │  │
+│  │  REQUEST PHASE (Configurable via config.json)                │  │
 │  │  ─────────────                                                │  │
-│  │  1. Apply random delay (0.5-2.0 seconds)                     │  │
-│  │  2. Track request count (extra delay every 10)               │  │
-│  │  3. Navigate with random wait strategy                       │  │
-│  │  4. Site-specific waits (5s timeout):                        │  │
+│  │  1. Apply initial delay (default: 0.0s - instant start!)     │  │
+│  │  2. Apply random delay (default: 0.1-0.5s per request)       │  │
+│  │  3. Track request count (extra delay every 10)               │  │
+│  │  4. Navigate with random wait strategy                       │  │
+│  │  5. Site-specific waits (5s timeout):                        │  │
 │  │     • MediUX: 1-2 sec for JavaScript execution               │  │
 │  │     • PosterDB: 0.8-1.5 sec for content load                 │  │
-│  │  5. Bezier curve mouse movement (60% chance)                 │  │
-│  │  6. Realistic scrolling behavior (40% chance)                │  │
-│  │  7. Extract HTML content                                     │  │
+│  │  6. Bezier curve mouse movement (60% chance)                 │  │
+│  │  7. Realistic scrolling behavior (40% chance)                │  │
+│  │  8. Extract HTML content                                     │  │
+│  │                                                               │  │
+│  │  Delay Configuration (config.json):                          │  │
+│  │  • scraper_initial_delay: First request (default: 0.0s)      │  │
+│  │  • scraper_min_delay: Min between requests (default: 0.1s)   │  │
+│  │  • scraper_max_delay: Max between requests (default: 0.5s)   │  │
+│  │  • scraper_batch_delay: Every 10 requests (default: 2.0s)    │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                       │
 │  ┌──────────────────────────────────────────────────────────────┐  │
@@ -95,16 +102,22 @@
 
 
 ═══════════════════════════════════════════════════════════════════════
-                      TIMING DIAGRAM
+                      TIMING DIAGRAM (Configurable)
 ═══════════════════════════════════════════════════════════════════════
 
-Request 1:  ─────[0.5-2.0s delay]─────▶ FETCH ▶ Parse
-Request 2:  ─────[0.5-2.0s delay]─────▶ FETCH ▶ Parse
-Request 3:  ─────[0.5-2.0s delay]─────▶ FETCH ▶ Parse
+Default Configuration (Fast & Balanced):
+Request 1:  ▶ FETCH ▶ Parse (no initial delay!)
+Request 2:  ─[0.1-0.5s delay]─▶ FETCH ▶ Parse
+Request 3:  ─[0.1-0.5s delay]─▶ FETCH ▶ Parse
 ...
-Request 10: ─────[0.5-2.0s delay]─────▶ FETCH ▶ Parse ─[3-5s EXTRA DELAY]─
-Request 11: ─────[0.5-2.0s delay]─────▶ FETCH ▶ Parse
+Request 10: ─[0.1-0.5s delay]─▶ FETCH ▶ Parse ─[2.0s EXTRA DELAY]─
+Request 11: ─[0.1-0.5s delay]─▶ FETCH ▶ Parse
 ...
+
+GUI Presets Available:
+• ⚡ Fast (Risky):      0.0s initial | 0.0-0.2s per request | 0.0s batch
+• ⚖️  Balanced (Default): 0.0s initial | 0.1-0.5s per request | 2.0s batch
+• 🛡️  Safe (Slower):     1.0s initial | 0.5-2.0s per request | 5.0s batch
 
 ═══════════════════════════════════════════════════════════════════════
                    DETECTION PROTECTION LAYERS
@@ -123,9 +136,10 @@ Layer 2: JAVASCRIPT FINGERPRINT
          ├─ Canvas Masking
          └─ WebGL Spoofing
 
-Layer 3: BEHAVIORAL ANALYSIS
-         ├─ Random Delays (0.5-2.0s)
-         ├─ Request Spacing (extra 3-5s every 10)
+Layer 3: BEHAVIORAL ANALYSIS (Configurable)
+         ├─ Initial Delay (0.0s default - instant start!)
+         ├─ Random Delays (0.1-0.5s default, configurable)
+         ├─ Request Spacing (extra 2.0s every 10, configurable)
          ├─ Bezier Curve Mouse Movements (60%)
          ├─ Micro-jitter (±2px wobble)
          ├─ Realistic Scrolling (40%)
@@ -157,8 +171,8 @@ Layer 5: PLAYWRIGHT-ONLY (No Fallback)
 | User agent analysis       | ✅        | 7 realistic agents rotated    |
 | Viewport fingerprinting   | ✅        | 5 sizes randomized            |
 | Header analysis           | ✅        | 12 realistic headers          |
-| Request timing patterns   | ✅        | Random 0.5-2.0s delays        |
-| Rate limiting             | ✅        | Extra delays every 10 req     |
+| Request timing patterns   | ✅        | Configurable delays (0.1-0.5s)|
+| Rate limiting             | ✅        | Configurable batch delays     |
 | Behavioral detection      | ✅        | Bezier curves, scrolling      |
 | Hardware fingerprinting   | ✅        | 8 cores, 8GB RAM, Intel GPU   |
 | Battery API fingerprint   | ✅        | Mocked charging state         |
@@ -166,6 +180,29 @@ Layer 5: PLAYWRIGHT-ONLY (No Fallback)
 | Timezone analysis         | ✅        | America/New_York              |
 | Language fingerprint      | ✅        | en-US, en                     |
 | Automation flags          | ✅        | All removed                   |
+
+## Configuration Options
+
+The scraper performance can be tuned via `config.json` or the GUI Settings tab:
+
+```json
+{
+  "scraper_initial_delay": 0.0,   // Delay before first request (seconds)
+  "scraper_min_delay": 0.1,        // Minimum delay between requests
+  "scraper_max_delay": 0.5,        // Maximum delay between requests  
+  "scraper_batch_delay": 2.0       // Extra delay every 10 requests
+}
+```
+
+**GUI Presets:**
+- **⚡ Fast (Risky):** All delays at minimum - fastest scraping, highest detection risk
+- **⚖️ Balanced (Default):** Optimized for speed while maintaining safety
+- **🛡️ Safe (Slower):** Conservative delays - slower but very safe
+
+**Performance Impact:**
+- **Default (Balanced):** ~5-10 posters/minute
+- **Fast:** ~15-20 posters/minute (higher risk)
+- **Safe:** ~2-5 posters/minute (lowest risk)
 
 ### Implemented Realistic Bezier Curve Mouse Movement
 

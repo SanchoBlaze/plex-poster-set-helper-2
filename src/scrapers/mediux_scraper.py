@@ -18,7 +18,7 @@ class MediuxScraper(BaseScraper):
             config: Configuration object for filter settings.
             use_playwright: Whether to use Playwright.
         """
-        super().__init__(use_playwright)
+        super().__init__(use_playwright, config)
         self.config = config
     
     def scrape(self, url: str) -> Tuple[List[PosterInfo], List[PosterInfo], List[PosterInfo]]:

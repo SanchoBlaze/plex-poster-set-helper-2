@@ -74,6 +74,15 @@ class PlexPosterGUI:
         self.labeled_filter_mediux = None
         self.labeled_filter_posterdb = None
         self.max_workers_var = None
+        self.initial_delay_var = None
+        self.min_delay_var = None
+        self.max_delay_var = None
+        self.batch_delay_var = None
+        self.page_wait_min_var = None
+        self.page_wait_max_var = None
+        self.fast_preset_btn = None
+        self.balanced_preset_btn = None
+        self.safe_preset_btn = None
         self.cancel_button = None
         self.is_cancelled = False
         self.active_executor = None
@@ -319,15 +328,30 @@ class PlexPosterGUI:
         self.mediux_filters_rows = []
         row += 1
         
+        # Application Settings Section Header
+        app_settings_label = ctk.CTkLabel(
+            main_scroll,
+            text="Application Settings",
+            text_color="#E5A00D",
+            font=("Roboto", 16, "bold")
+        )
+        app_settings_label.grid(row=row, column=0, pady=(15, 10), padx=10, sticky="w")
+        row += 1
+        
         # Max Concurrent Workers
         max_workers_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
-        max_workers_frame.grid(row=row, column=0, pady=(5, 10), padx=10, sticky="ew")
+        max_workers_frame.grid(row=row, column=0, pady=(0, 8), padx=10, sticky="ew")
         max_workers_frame.grid_columnconfigure(1, weight=1)
         
         cpu_count = os.cpu_count() or 4
         default_workers = min(3, cpu_count)
         
-        max_workers_label = ctk.CTkLabel(max_workers_frame, text="Max Concurrent Workers", text_color="#696969", font=("Roboto", 14))
+        max_workers_label = ctk.CTkLabel(
+            max_workers_frame,
+            text="Max Concurrent Workers",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
         max_workers_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
         
         self.max_workers_var = tk.IntVar(value=default_workers)
@@ -344,23 +368,402 @@ class PlexPosterGUI:
         )
         max_workers_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
         
-        max_workers_value_label = ctk.CTkLabel(max_workers_frame, textvariable=self.max_workers_var, text_color="#E5A00D", font=("Roboto", 15, "bold"))
-        max_workers_value_label.grid(row=0, column=1, pady=0, padx=0, sticky="e")
+        max_workers_value_label = ctk.CTkLabel(
+            max_workers_frame,
+            textvariable=self.max_workers_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        max_workers_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
         row += 1
         
         # Log File Path
         log_file_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
-        log_file_frame.grid(row=row, column=0, pady=(5, 10), padx=10, sticky="ew")
+        log_file_frame.grid(row=row, column=0, pady=(0, 8), padx=10, sticky="ew")
         log_file_frame.grid_columnconfigure(1, weight=1)
         
-        log_file_label = ctk.CTkLabel(log_file_frame, text="Log File Path", text_color="#696969", font=("Roboto", 14))
+        log_file_label = ctk.CTkLabel(
+            log_file_frame,
+            text="Log File Path",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
         log_file_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
         
-        self.log_file_entry = ctk.CTkEntry(log_file_frame, placeholder_text="debug.log", fg_color="#1C1E1E")
+        self.log_file_entry = ctk.CTkEntry(
+            log_file_frame,
+            placeholder_text="debug.log",
+            fg_color="#1C1E1E",
+            border_width=0
+        )
         self.log_file_entry.grid(row=0, column=1, pady=0, padx=(0, 5), sticky="ew")
         
-        open_log_button = self._create_button(log_file_frame, text="Open Log", command=self._open_log_file)
-        open_log_button.grid(row=0, column=2, pady=0, padx=0, ipadx=15, sticky="e")
+        open_log_button = self._create_button(log_file_frame, text="Open Log", command=self._open_log_file, height=32)
+        open_log_button.grid(row=0, column=2, pady=0, padx=0, ipadx=10, sticky="e")
+        row += 1
+        
+        # Scraper Performance Settings Section
+        scraper_section_label = ctk.CTkLabel(
+            main_scroll,
+            text="Scraper Performance Settings",
+            text_color="#E5A00D",
+            font=("Roboto", 16, "bold")
+        )
+        scraper_section_label.grid(row=row, column=0, pady=(15, 5), padx=10, sticky="w")
+        row += 1
+        
+        scraper_info_label = ctk.CTkLabel(
+            main_scroll,
+            text="Configure delays between web scraping requests. Lower values = faster scraping but higher detection risk.",
+            text_color="#696969",
+            font=("Roboto", 11),
+            wraplength=600,
+            justify="left"
+        )
+        scraper_info_label.grid(row=row, column=0, pady=(0, 5), padx=10, sticky="w")
+        row += 1
+        
+        # Quick preset buttons at top
+        preset_frame = ctk.CTkFrame(main_scroll, fg_color="#1C1E1E", corner_radius=5)
+        preset_frame.grid(row=row, column=0, pady=(5, 15), padx=10, sticky="ew")
+        preset_frame.grid_columnconfigure(0, weight=0)
+        preset_frame.grid_columnconfigure(1, weight=1)
+        preset_frame.grid_columnconfigure(2, weight=1)
+        preset_frame.grid_columnconfigure(3, weight=1)
+        
+        preset_label = ctk.CTkLabel(
+            preset_frame,
+            text="Quick Presets:",
+            text_color="#A1A1A1",
+            font=("Roboto", 13, "bold")
+        )
+        preset_label.grid(row=0, column=0, pady=10, padx=(15, 10), sticky="w")
+        
+        self.fast_preset_btn = self._create_button(
+            preset_frame,
+            text="⚡ Fast",
+            command=lambda: self._apply_scraper_preset('fast'),
+            height=32
+        )
+        self.fast_preset_btn.grid(row=0, column=1, pady=10, padx=5, sticky="ew")
+        
+        self.balanced_preset_btn = self._create_button(
+            preset_frame,
+            text="⚖️ Balanced",
+            command=lambda: self._apply_scraper_preset('balanced'),
+            height=32
+        )
+        self.balanced_preset_btn.grid(row=0, column=2, pady=10, padx=5, sticky="ew")
+        
+        self.safe_preset_btn = self._create_button(
+            preset_frame,
+            text="🛡️ Safe",
+            command=lambda: self._apply_scraper_preset('safe'),
+            height=32
+        )
+        self.safe_preset_btn.grid(row=0, column=3, pady=10, padx=(5, 15), sticky="ew")
+        row += 1
+        
+        # Request Delays subsection
+        request_delays_label = ctk.CTkLabel(
+            main_scroll,
+            text="Request Delays",
+            text_color="#A1A1A1",
+            font=("Roboto", 14, "bold")
+        )
+        request_delays_label.grid(row=row, column=0, pady=(5, 8), padx=10, sticky="w")
+        row += 1
+        
+        # Initial Delay (before first request)
+        initial_delay_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
+        initial_delay_frame.grid(row=row, column=0, pady=(5, 5), padx=10, sticky="ew")
+        initial_delay_frame.grid_columnconfigure(1, weight=1)
+        
+        initial_delay_label = ctk.CTkLabel(
+            initial_delay_frame,
+            text="Initial Delay (first request)",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
+        initial_delay_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
+        
+        self.initial_delay_var = tk.DoubleVar(value=0.0)
+        initial_delay_slider = ctk.CTkSlider(
+            initial_delay_frame,
+            from_=0.0,
+            to=5.0,
+            number_of_steps=50,
+            variable=self.initial_delay_var,
+            fg_color="#1C1E1E",
+            progress_color="#E5A00D",
+            button_color="#E5A00D",
+            button_hover_color="#FFA500"
+        )
+        initial_delay_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
+        
+        initial_delay_value_label = ctk.CTkLabel(
+            initial_delay_frame,
+            textvariable=self.initial_delay_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        initial_delay_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
+        
+        initial_delay_unit = ctk.CTkLabel(
+            initial_delay_frame,
+            text="sec",
+            text_color="#696969",
+            font=("Roboto", 11)
+        )
+        initial_delay_unit.grid(row=0, column=3, pady=0, padx=(2, 0), sticky="w")
+        row += 1
+        
+        # Min Delay (between requests)
+        min_delay_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
+        min_delay_frame.grid(row=row, column=0, pady=(5, 5), padx=10, sticky="ew")
+        min_delay_frame.grid_columnconfigure(1, weight=1)
+        
+        min_delay_label = ctk.CTkLabel(
+            min_delay_frame,
+            text="Min Delay (between requests)",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
+        min_delay_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
+        
+        self.min_delay_var = tk.DoubleVar(value=0.1)
+        min_delay_slider = ctk.CTkSlider(
+            min_delay_frame,
+            from_=0.0,
+            to=5.0,
+            number_of_steps=50,
+            variable=self.min_delay_var,
+            fg_color="#1C1E1E",
+            progress_color="#E5A00D",
+            button_color="#E5A00D",
+            button_hover_color="#FFA500"
+        )
+        min_delay_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
+        
+        min_delay_value_label = ctk.CTkLabel(
+            min_delay_frame,
+            textvariable=self.min_delay_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        min_delay_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
+        
+        min_delay_unit = ctk.CTkLabel(
+            min_delay_frame,
+            text="sec",
+            text_color="#696969",
+            font=("Roboto", 11)
+        )
+        min_delay_unit.grid(row=0, column=3, pady=0, padx=(2, 0), sticky="w")
+        row += 1
+        
+        # Max Delay (between requests)
+        max_delay_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
+        max_delay_frame.grid(row=row, column=0, pady=(5, 5), padx=10, sticky="ew")
+        max_delay_frame.grid_columnconfigure(1, weight=1)
+        
+        max_delay_label = ctk.CTkLabel(
+            max_delay_frame,
+            text="Max Delay (between requests)",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
+        max_delay_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
+        
+        self.max_delay_var = tk.DoubleVar(value=0.5)
+        max_delay_slider = ctk.CTkSlider(
+            max_delay_frame,
+            from_=0.0,
+            to=5.0,
+            number_of_steps=50,
+            variable=self.max_delay_var,
+            fg_color="#1C1E1E",
+            progress_color="#E5A00D",
+            button_color="#E5A00D",
+            button_hover_color="#FFA500"
+        )
+        max_delay_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
+        
+        max_delay_value_label = ctk.CTkLabel(
+            max_delay_frame,
+            textvariable=self.max_delay_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        max_delay_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
+        
+        max_delay_unit = ctk.CTkLabel(
+            max_delay_frame,
+            text="sec",
+            text_color="#696969",
+            font=("Roboto", 11)
+        )
+        max_delay_unit.grid(row=0, column=3, pady=0, padx=(2, 0), sticky="w")
+        row += 1
+        
+        # Batch Delay (every 10 requests)
+        batch_delay_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
+        batch_delay_frame.grid(row=row, column=0, pady=(5, 10), padx=10, sticky="ew")
+        batch_delay_frame.grid_columnconfigure(1, weight=1)
+        
+        batch_delay_label = ctk.CTkLabel(
+            batch_delay_frame,
+            text="Batch Delay (every 10 requests)",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
+        batch_delay_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
+        
+        self.batch_delay_var = tk.DoubleVar(value=2.0)
+        batch_delay_slider = ctk.CTkSlider(
+            batch_delay_frame,
+            from_=0.0,
+            to=10.0,
+            number_of_steps=100,
+            variable=self.batch_delay_var,
+            fg_color="#1C1E1E",
+            progress_color="#E5A00D",
+            button_color="#E5A00D",
+            button_hover_color="#FFA500"
+        )
+        batch_delay_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
+        
+        batch_delay_value_label = ctk.CTkLabel(
+            batch_delay_frame,
+            textvariable=self.batch_delay_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        batch_delay_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
+        
+        batch_delay_unit = ctk.CTkLabel(
+            batch_delay_frame,
+            text="sec",
+            text_color="#696969",
+            font=("Roboto", 11)
+        )
+        batch_delay_unit.grid(row=0, column=3, pady=0, padx=(2, 0), sticky="w")
+        row += 1
+        
+        # Page Load Delays subsection
+        page_wait_label = ctk.CTkLabel(
+            main_scroll,
+            text="Page Load Delays",
+            text_color="#A1A1A1",
+            font=("Roboto", 14, "bold")
+        )
+        page_wait_label.grid(row=row, column=0, pady=(15, 3), padx=10, sticky="w")
+        row += 1
+        
+        page_wait_desc = ctk.CTkLabel(
+            main_scroll,
+            text="Wait time after page navigation for JavaScript execution",
+            text_color="#696969",
+            font=("Roboto", 11),
+            wraplength=600,
+            justify="left"
+        )
+        page_wait_desc.grid(row=row, column=0, pady=(0, 8), padx=10, sticky="w")
+        row += 1
+        
+        # Page Wait Min
+        page_wait_min_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
+        page_wait_min_frame.grid(row=row, column=0, pady=(5, 5), padx=10, sticky="ew")
+        page_wait_min_frame.grid_columnconfigure(1, weight=1)
+        
+        page_wait_min_label = ctk.CTkLabel(
+            page_wait_min_frame,
+            text="Min Page Wait",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
+        page_wait_min_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
+        
+        self.page_wait_min_var = tk.DoubleVar(value=0.0)
+        page_wait_min_slider = ctk.CTkSlider(
+            page_wait_min_frame,
+            from_=0.0,
+            to=3.0,
+            number_of_steps=30,
+            variable=self.page_wait_min_var,
+            fg_color="#1C1E1E",
+            progress_color="#E5A00D",
+            button_color="#E5A00D",
+            button_hover_color="#FFA500"
+        )
+        page_wait_min_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
+        
+        page_wait_min_value_label = ctk.CTkLabel(
+            page_wait_min_frame,
+            textvariable=self.page_wait_min_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        page_wait_min_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
+        
+        page_wait_min_unit = ctk.CTkLabel(
+            page_wait_min_frame,
+            text="sec",
+            text_color="#696969",
+            font=("Roboto", 11)
+        )
+        page_wait_min_unit.grid(row=0, column=3, pady=0, padx=(2, 0), sticky="w")
+        row += 1
+        
+        # Page Wait Max
+        page_wait_max_frame = ctk.CTkFrame(main_scroll, fg_color="transparent")
+        page_wait_max_frame.grid(row=row, column=0, pady=(5, 10), padx=10, sticky="ew")
+        page_wait_max_frame.grid_columnconfigure(1, weight=1)
+        
+        page_wait_max_label = ctk.CTkLabel(
+            page_wait_max_frame,
+            text="Max Page Wait",
+            text_color="#696969",
+            font=("Roboto", 13)
+        )
+        page_wait_max_label.grid(row=0, column=0, pady=0, padx=(0, 10), sticky="w")
+        
+        self.page_wait_max_var = tk.DoubleVar(value=0.5)
+        page_wait_max_slider = ctk.CTkSlider(
+            page_wait_max_frame,
+            from_=0.0,
+            to=3.0,
+            number_of_steps=30,
+            variable=self.page_wait_max_var,
+            fg_color="#1C1E1E",
+            progress_color="#E5A00D",
+            button_color="#E5A00D",
+            button_hover_color="#FFA500"
+        )
+        page_wait_max_slider.grid(row=0, column=1, pady=0, padx=0, sticky="ew")
+        
+        page_wait_max_value_label = ctk.CTkLabel(
+            page_wait_max_frame,
+            textvariable=self.page_wait_max_var,
+            text_color="#E5A00D",
+            font=("Roboto", 13, "bold"),
+            width=50
+        )
+        page_wait_max_value_label.grid(row=0, column=2, pady=0, padx=(10, 0), sticky="e")
+        
+        page_wait_max_unit = ctk.CTkLabel(
+            page_wait_max_frame,
+            text="sec",
+            text_color="#696969",
+            font=("Roboto", 11)
+        )
+        page_wait_max_unit.grid(row=0, column=3, pady=0, padx=(2, 0), sticky="w")
         row += 1
         
         # Buttons fixed at bottom outside scroll area
@@ -1105,6 +1508,23 @@ class PlexPosterGUI:
             max_workers_value = getattr(self.config, 'max_workers', 3)
             self.max_workers_var.set(max_workers_value)
         
+        # Load scraper delay settings
+        if self.initial_delay_var:
+            self.initial_delay_var.set(getattr(self.config, 'scraper_initial_delay', 0.0))
+        if self.min_delay_var:
+            self.min_delay_var.set(getattr(self.config, 'scraper_min_delay', 0.1))
+        if self.max_delay_var:
+            self.max_delay_var.set(getattr(self.config, 'scraper_max_delay', 0.5))
+        if self.batch_delay_var:
+            self.batch_delay_var.set(getattr(self.config, 'scraper_batch_delay', 2.0))
+        if self.page_wait_min_var:
+            self.page_wait_min_var.set(getattr(self.config, 'scraper_page_wait_min', 0.0))
+        if self.page_wait_max_var:
+            self.page_wait_max_var.set(getattr(self.config, 'scraper_page_wait_max', 0.5))
+        
+        # Update preset button highlighting based on loaded values
+        self._update_preset_buttons()
+        
         # Load log file path
         if self.log_file_entry:
             self.log_file_entry.delete(0, ctk.END)
@@ -1117,6 +1537,118 @@ class PlexPosterGUI:
         # Initialize poster scrape with one empty row if needed
         if self.poster_scrape_scroll and len(self.poster_scrape_rows) == 0:
             self._add_scrape_url_row()
+    
+    def _apply_scraper_preset(self, preset: str):
+        """Apply a scraper delay preset.
+        
+        Args:
+            preset: Preset name ('fast', 'balanced', or 'safe')
+        """
+        presets = {
+            'fast': {
+                'initial': 0.0, 'min': 0.0, 'max': 0.2, 'batch': 0.0,
+                'page_min': 0.0, 'page_max': 0.0
+            },
+            'balanced': {
+                'initial': 0.0, 'min': 0.1, 'max': 0.5, 'batch': 2.0,
+                'page_min': 0.0, 'page_max': 0.5
+            },
+            'safe': {
+                'initial': 1.0, 'min': 0.5, 'max': 2.0, 'batch': 5.0,
+                'page_min': 0.5, 'page_max': 1.5
+            }
+        }
+        
+        values = presets.get(preset, presets['balanced'])
+        
+        self.initial_delay_var.set(values['initial'])
+        self.min_delay_var.set(values['min'])
+        self.max_delay_var.set(values['max'])
+        self.batch_delay_var.set(values['batch'])
+        self.page_wait_min_var.set(values['page_min'])
+        self.page_wait_max_var.set(values['page_max'])
+        
+        # Update button highlighting
+        self._update_preset_buttons(preset)
+    
+    def _update_preset_buttons(self, active_preset: str = None):
+        """Update preset button highlighting based on active preset.
+        
+        Args:
+            active_preset: Name of active preset, or None to auto-detect
+        """
+        if not self.fast_preset_btn or not self.balanced_preset_btn or not self.safe_preset_btn:
+            return
+        
+        # Auto-detect if not specified
+        if active_preset is None:
+            active_preset = self._detect_active_preset()
+        
+        # Orange color for active, default for inactive
+        plex_orange = "#E5A00D"
+        default_color = "#1C1E1E"
+        hover_orange = "#FFA500"
+        default_hover = "#484848"
+        active_text = "#000000"  # Black text for active button
+        default_text = "#CECECE"  # Gray text for inactive button
+        
+        # Update Fast button
+        if active_preset == 'fast':
+            self.fast_preset_btn.configure(fg_color=plex_orange, hover_color=hover_orange, text_color=active_text)
+        else:
+            self.fast_preset_btn.configure(fg_color=default_color, hover_color=default_hover, text_color=default_text)
+        
+        # Update Balanced button
+        if active_preset == 'balanced':
+            self.balanced_preset_btn.configure(fg_color=plex_orange, hover_color=hover_orange, text_color=active_text)
+        else:
+            self.balanced_preset_btn.configure(fg_color=default_color, hover_color=default_hover, text_color=default_text)
+        
+        # Update Safe button
+        if active_preset == 'safe':
+            self.safe_preset_btn.configure(fg_color=plex_orange, hover_color=hover_orange, text_color=active_text)
+        else:
+            self.safe_preset_btn.configure(fg_color=default_color, hover_color=default_hover, text_color=default_text)
+    
+    def _detect_active_preset(self) -> str:
+        """Detect which preset matches current values.
+        
+        Returns:
+            Preset name ('fast', 'balanced', 'safe', or None for custom)
+        """
+        if not all([self.initial_delay_var, self.min_delay_var, self.max_delay_var, 
+                   self.batch_delay_var, self.page_wait_min_var, self.page_wait_max_var]):
+            return 'balanced'
+        
+        current = {
+            'initial': round(self.initial_delay_var.get(), 1),
+            'min': round(self.min_delay_var.get(), 1),
+            'max': round(self.max_delay_var.get(), 1),
+            'batch': round(self.batch_delay_var.get(), 1),
+            'page_min': round(self.page_wait_min_var.get(), 1),
+            'page_max': round(self.page_wait_max_var.get(), 1)
+        }
+        
+        # Check Fast preset
+        if (current['initial'] == 0.0 and current['min'] == 0.0 and 
+            current['max'] == 0.2 and current['batch'] == 0.0 and
+            current['page_min'] == 0.0 and current['page_max'] == 0.0):
+            return 'fast'
+        
+        # Check Balanced preset
+        if (current['initial'] == 0.0 and current['min'] == 0.1 and 
+            current['max'] == 0.5 and current['batch'] == 2.0 and
+            current['page_min'] == 0.0 and current['page_max'] == 0.5):
+            return 'balanced'
+        
+        # Check Safe preset
+        if (current['initial'] == 1.0 and current['min'] == 0.5 and 
+            current['max'] == 2.0 and current['batch'] == 5.0 and
+            current['page_min'] == 0.5 and current['page_max'] == 1.5):
+            return 'safe'
+        
+        # Custom values - no highlight
+        return None
     
     def _save_config(self):
         """Save configuration from UI fields."""
@@ -1156,7 +1688,13 @@ class PlexPosterGUI:
             bulk_files=self.config.bulk_files,  # Preserve bulk files list
             title_mappings=self.config.title_mappings,  # Preserve title mappings
             max_workers=self.max_workers_var.get() if self.max_workers_var else 3,
-            log_file=self.log_file_entry.get().strip() if self.log_file_entry.get().strip() else "debug.log"
+            log_file=self.log_file_entry.get().strip() if self.log_file_entry.get().strip() else "debug.log",
+            scraper_min_delay=round(self.min_delay_var.get(), 2) if self.min_delay_var else 0.1,
+            scraper_max_delay=round(self.max_delay_var.get(), 2) if self.max_delay_var else 0.5,
+            scraper_initial_delay=round(self.initial_delay_var.get(), 2) if self.initial_delay_var else 0.0,
+            scraper_batch_delay=round(self.batch_delay_var.get(), 2) if self.batch_delay_var else 2.0,
+            scraper_page_wait_min=round(self.page_wait_min_var.get(), 2) if self.page_wait_min_var else 0.0,
+            scraper_page_wait_max=round(self.page_wait_max_var.get(), 2) if self.page_wait_max_var else 0.5
         )
         
         if self.config_manager.save(new_config):

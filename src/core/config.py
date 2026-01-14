@@ -18,6 +18,13 @@ class Config:
     title_mappings: Dict[str, str] = None
     max_workers: int = 3
     log_file: str = "debug.log"  # Path to log file
+    # Scraper delay settings
+    scraper_min_delay: float = 0.1  # Minimum delay between requests (seconds)
+    scraper_max_delay: float = 0.5  # Maximum delay between requests (seconds)
+    scraper_initial_delay: float = 0.0  # Delay before first request (seconds)
+    scraper_batch_delay: float = 2.0  # Extra delay every 10 requests (seconds)
+    scraper_page_wait_min: float = 0.0  # Min wait for page JS execution (seconds)
+    scraper_page_wait_max: float = 0.5  # Max wait for page JS execution (seconds)
     
     def __post_init__(self):
         """Initialize default values for mutable fields."""
