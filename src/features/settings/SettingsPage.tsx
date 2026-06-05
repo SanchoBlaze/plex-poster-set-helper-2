@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LogIn, LogOut, RefreshCw, Save, ServerCrash,
   Server, User, Sliders, SlidersHorizontal, Filter, Wrench,
-  CheckCircle2, Circle, Info,
+  CheckCircle2, Circle,
 } from 'lucide-react'
 import Button from '../../components/ui/Button'
 import Spinner from '../../components/ui/Spinner'
@@ -173,6 +173,7 @@ export default function SettingsPage() {
       if (s.status === 'idle') {
         setLibraries([])
         setServerConnected(false)
+        setTestMsg(null)
       }
     })
     return () => { off() }
@@ -200,6 +201,7 @@ export default function SettingsPage() {
     setAuthStatus({ status: 'idle' })
     setLibraries([])
     setServerConnected(false)
+    setTestMsg(null)
   }
 
   // ── Test connection ────────────────────────────────────────────────────────
@@ -257,7 +259,7 @@ export default function SettingsPage() {
   const connected = authStatus.status === 'authorized'
   const movieLibs = libraries.filter(l => l.type === 'movie')
   const showLibs  = libraries.filter(l => l.type === 'show')
-  const libsSelected = (merged.movieLibraries.length + merged.tvLibraries.length) > 0
+  const libsSelected = serverConnected && (merged.movieLibraries.length + merged.tvLibraries.length) > 0
 
   // Setup flow state
   const step1: StepState = connected ? 'done' : 'active'
@@ -359,14 +361,9 @@ export default function SettingsPage() {
           )}
         </Section>
 
-        {/* ── Plex server ────────────────────────────────────────────────── */}
+        {/* ── Plex server — only shown once authenticated ─────────────────── */}
+        {connected && (
         <Section icon={<Server size={15} />} title="Plex Server" description="Local server address. Required even when signed in via plex.tv.">
-          {!connected && (
-            <div className={styles.authFirstNote}>
-              <Info size={13} />
-              <span>Sign in with Plex above first — your auth token is needed to connect to the server.</span>
-            </div>
-          )}
           <FieldRow label="Server URL" hint="e.g. http://localhost:32400">
             <div className={styles.inputWithAction}>
               <input
@@ -375,14 +372,13 @@ export default function SettingsPage() {
                 onChange={e => patch('baseUrl', e.target.value)}
                 placeholder="http://localhost:32400"
                 spellCheck={false}
-                disabled={!connected}
               />
               <Button
                 variant="secondary"
                 size="sm"
                 icon={testing ? <Spinner size="xs" color="current" /> : <RefreshCw size={12} />}
                 onClick={testConnection}
-                disabled={testing || !merged.baseUrl || !connected}
+                disabled={testing || !merged.baseUrl}
               >
                 Connect
               </Button>
@@ -402,6 +398,7 @@ export default function SettingsPage() {
             </AnimatePresence>
           </FieldRow>
         </Section>
+        )}
 
         {/* ── Libraries — only appear once server connection is established ── */}
         {serverConnected && (
