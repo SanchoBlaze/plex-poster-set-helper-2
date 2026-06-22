@@ -206,6 +206,7 @@ export interface UpdateInfo {
 export interface AppEnv {
   packaged: boolean
   container: boolean
+  web?: boolean
   version: string
   repoUrl: string
 }

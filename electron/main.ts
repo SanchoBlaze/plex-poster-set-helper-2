@@ -11,8 +11,8 @@ import { registerBulkHandlers } from './ipc/bulkHandlers'
 import { registerAuthHandlers } from './ipc/authHandlers'
 import { registerAppHandlers } from './ipc/appHandlers'
 import { registerLogHandlers } from './ipc/logHandlers'
-import { registerSchedulerHandlers } from './ipc/schedulerHandlers'
-import { registerBrowserHandlers } from './ipc/browserHandlers'
+import { registerSchedulerHandlers, wireSchedulerEvents } from './ipc/schedulerHandlers'
+import { registerBrowserHandlers, wireBrowserEvents } from './ipc/browserHandlers'
 import { registerLibraryHandlers } from './ipc/libraryHandlers'
 import { SchedulerService } from './services/schedulerService'
 import { PlaywrightService } from './services/playwrightService'
@@ -375,6 +375,10 @@ app.whenReady().then(async () => {
   if (!NO_TRAY) setupTray()
   // Register IPC first so the renderer never gets "no handler" errors
   registerIpcHandlers()
+  if (mainWindow) {
+    wireSchedulerEvents(mainWindow)
+    wireBrowserEvents(mainWindow)
+  }
   await initServices().catch(err => console.error('initServices failed:', err))
   setupAutoUpdater()
 

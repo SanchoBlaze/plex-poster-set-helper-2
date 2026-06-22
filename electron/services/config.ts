@@ -1,7 +1,9 @@
-import Store from 'electron-store'
-import { app, safeStorage } from 'electron'
+import fs from 'fs'
+import path from 'path'
 import { randomUUID } from 'crypto'
 import type { AppConfig } from '../ipc/types'
+import { getUserDataPath, getLogPath } from '../runtime/paths'
+import { isWebMode, isHeadlessMode } from '../runtime/runtime'
 
 const DEFAULTS: AppConfig = {
   baseUrl: 'http://localhost:32400',
@@ -31,63 +33,104 @@ const DEFAULTS: AppConfig = {
   excludedLibraries: [],
 }
 
-const store = new Store<Record<string, unknown>>({ name: 'app-config' })
+function useJsonStore(): boolean {
+  return isWebMode() || isHeadlessMode() || !!process.env.PLEX_HELPER_CONFIG_DIR
+}
 
-/** Persistent app configuration backed by electron-store, with the Plex token encrypted at rest. */
+function jsonConfigPath(): string {
+  return path.join(getUserDataPath(), 'config.json')
+}
+
+function readJsonStore(): Partial<AppConfig> {
+  try {
+    const raw = fs.readFileSync(jsonConfigPath(), 'utf8')
+    return JSON.parse(raw) as Partial<AppConfig>
+  } catch {
+    return {}
+  }
+}
+
+function writeJsonStore(data: Record<string, unknown>): void {
+  const dir = getUserDataPath()
+  fs.mkdirSync(dir, { recursive: true })
+  fs.writeFileSync(jsonConfigPath(), JSON.stringify(data, null, 2), 'utf8')
+}
+
+let electronStore: { get: (k: string) => unknown; set: (k: string, v: unknown) => void; store: Record<string, unknown> } | null = null
+
+function getElectronStore() {
+  if (electronStore) return electronStore
+  const Store = require('electron-store') as typeof import('electron-store').default
+  electronStore = new Store<Record<string, unknown>>({ name: 'app-config' })
+  return electronStore
+}
+
+function readRaw(): Partial<AppConfig> {
+  if (useJsonStore()) return readJsonStore()
+  return getElectronStore().store as Partial<AppConfig>
+}
+
+function writeKey(key: string, value: unknown): void {
+  if (useJsonStore()) {
+    const current = readJsonStore()
+    writeJsonStore({ ...current, [key]: value })
+  } else {
+    getElectronStore().set(key, value)
+  }
+}
+
+function decryptToken(stored: string): string {
+  if (!stored) return ''
+  if (useJsonStore()) return stored
+  try {
+    const { safeStorage } = require('electron') as typeof import('electron')
+    if (safeStorage.isEncryptionAvailable()) {
+      const buf = Buffer.from(stored, 'base64')
+      return safeStorage.decryptString(buf)
+    }
+  } catch { /* fall through */ }
+  return stored
+}
+
+function encryptToken(token: string): string {
+  if (useJsonStore()) return token
+  try {
+    const { safeStorage } = require('electron') as typeof import('electron')
+    if (safeStorage.isEncryptionAvailable()) {
+      return safeStorage.encryptString(token).toString('base64')
+    }
+  } catch { /* fall through */ }
+  return token
+}
+
+/** Persistent app configuration with JSON file (web/Docker) or electron-store (desktop). */
 export const ConfigService = {
-  /** Ensures a stable clientIdentifier exists (generated once per install). */
   async init() {
-    if (!store.get('clientIdentifier')) {
-      store.set('clientIdentifier', randomUUID())
+    if (!readRaw().clientIdentifier) {
+      writeKey('clientIdentifier', randomUUID())
     }
   },
 
-  /**
-   * Reads the stored configuration.
-   *
-   * @returns The full config merged over defaults, with the Plex token decrypted.
-   */
   get(): AppConfig {
-    const raw = store.store as Partial<AppConfig>
+    const raw = readRaw()
     const config = { ...DEFAULTS, ...raw }
-
-    if (config.token && safeStorage.isEncryptionAvailable()) {
-      try {
-        const buf = Buffer.from(config.token as string, 'base64')
-        config.token = safeStorage.decryptString(buf)
-      } catch {
-        config.token = ''
-      }
+    if (config.token) {
+      config.token = decryptToken(config.token as string)
     }
-
     return config
   },
 
-  /**
-   * Persists a partial config update.
-   *
-   * @param partial - Keys to write; the Plex token is encrypted when the OS
-   *   keychain is available.
-   */
   set(partial: Partial<AppConfig>) {
     const updates = { ...partial }
-
-    if (updates.token !== undefined && safeStorage.isEncryptionAvailable()) {
-      const encrypted = safeStorage.encryptString(updates.token)
-      updates.token = encrypted.toString('base64')
+    if (updates.token !== undefined) {
+      updates.token = encryptToken(updates.token)
     }
-
     Object.entries(updates).forEach(([key, value]) => {
-      store.set(key, value)
+      writeKey(key, value)
     })
   },
 
-  /**
-   * Returns the OS log directory for this app.
-   *
-   * @returns Absolute path to the log folder.
-   */
   getLogPath(): string {
-    return app.getPath('logs')
+    return getLogPath()
   },
 }
