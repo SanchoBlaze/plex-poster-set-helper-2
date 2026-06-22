@@ -158,8 +158,8 @@ function MyLibraryView({ subs, targetSection, targetItem }: { subs: string[]; ta
   const offsetRef = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const isGlobalSearch = search.trim().length > 0 && !isCollectionsView
-  const isCollectionsView = !isGlobalSearch && activeKey === COLLECTIONS_TAB_KEY
+  const isCollectionsView = activeKey === COLLECTIONS_TAB_KEY && search.trim().length === 0
+  const isGlobalSearch = search.trim().length > 0
   const hasMovieLibrary = sections.some(s => s.type === 'movie')
 
   const loadSections = useCallback(() => {
@@ -1495,7 +1495,7 @@ function SetCard({ set, apply, onApply, enabledTypes, title, badge, disabled, fo
                     />
                     All {(collectionTotal && collectionTotal > (collectionMovies ?? 0))
                       ? `${collectionMovies} of ${collectionTotal} movies`
-                      : `${collectionMovies} movies`} in {scopeContext === 'collection' ? 'collection' : 'library'}
+                      : `${collectionMovies} movies`} in library
                   </label>
                 </div>
               )}

@@ -54,7 +54,7 @@ const api = {
     {
       const handler = (_: unknown, data: ScrapeProgress) => cb(data)
       ipcRenderer.on('scrape:progress', handler)
-      return () => ipcRenderer.removeListener('scrape:progress', handler)
+      return () => { ipcRenderer.removeListener('scrape:progress', handler) }
     },
   },
 
@@ -82,7 +82,7 @@ const api = {
     {
       const handler = (_: unknown, data: PlexAuthStatus) => cb(data)
       ipcRenderer.on('auth:statusChange', handler)
-      return () => ipcRenderer.removeListener('auth:statusChange', handler)
+      return () => { ipcRenderer.removeListener('auth:statusChange', handler) }
     },
   },
 
@@ -98,18 +98,18 @@ const api = {
     {
       const handler = (_: unknown, data: UpdateInfo) => cb(data)
       ipcRenderer.on('app:updateAvailable', handler)
-      return () => ipcRenderer.removeListener('app:updateAvailable', handler)
+      return () => { ipcRenderer.removeListener('app:updateAvailable', handler) }
     },
     onDownloadProgress: (cb: (p: UpdateProgress) => void) =>
     {
       const handler = (_: unknown, data: UpdateProgress) => cb(data)
       ipcRenderer.on('app:downloadProgress', handler)
-      return () => ipcRenderer.removeListener('app:downloadProgress', handler)
+      return () => { ipcRenderer.removeListener('app:downloadProgress', handler) }
     },
     onUpdateReady: (cb: () => void) =>
     {
       ipcRenderer.on('app:updateReady', cb)
-      return () => ipcRenderer.removeListener('app:updateReady', cb)
+      return () => { ipcRenderer.removeListener('app:updateReady', cb) }
     },
   },
 
@@ -125,7 +125,7 @@ const api = {
     {
       const handler = (_: unknown, data: ScheduledJob[]) => cb(data)
       ipcRenderer.on('scheduler:onChange', handler)
-      return () => ipcRenderer.removeListener('scheduler:onChange', handler)
+      return () => { ipcRenderer.removeListener('scheduler:onChange', handler) }
     },
   },
 
@@ -136,7 +136,7 @@ const api = {
     {
       const handler = (_: unknown, line: string) => cb(line)
       ipcRenderer.on('browser:installProgress', handler)
-      return () => ipcRenderer.removeListener('browser:installProgress', handler)
+      return () => { ipcRenderer.removeListener('browser:installProgress', handler) }
     },
   },
 
@@ -147,7 +147,7 @@ const api = {
     {
       const handler = (_: unknown, data: LogEntry) => cb(data)
       ipcRenderer.on('log:stream', handler)
-      return () => ipcRenderer.removeListener('log:stream', handler)
+      return () => { ipcRenderer.removeListener('log:stream', handler) }
     },
   },
 }

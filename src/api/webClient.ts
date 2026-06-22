@@ -157,7 +157,7 @@ export function createWebClient(): Api {
       checkUpdate: (): Promise<UpdateInfo> => apiFetch('/api/app/check-update'),
       installUpdate: () => apiFetch('/api/app/install-update', { method: 'POST' }),
       quitAndInstall: () => apiFetch('/api/app/quit-and-install', { method: 'POST' }),
-      openExternal: (url: string) => { window.open(url, '_blank', 'noopener') },
+      openExternal: async (url: string) => { window.open(url, '_blank', 'noopener') },
       openLogFolder: async () => {
         const res = await apiFetch<{ path: string }>('/api/app/log-path')
         await navigator.clipboard.writeText(res.path).catch(() => {})
